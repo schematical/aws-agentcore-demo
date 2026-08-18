@@ -30,7 +30,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
 
 
 resource "aws_ecr_repository" "agent_ecr" {
-  name                 = "${var.project_name}"
+  name                 = "${var.project_name}-${var.env}-${var.region}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -40,7 +40,7 @@ resource "aws_ecr_repository" "agent_ecr" {
   force_delete = true
 
   tags = {
-    Name   = "${var.project_name}-ecr-repository"
+    Name   = "${var.project_name}-${var.env}-${var.region}"
     Module = "ECR"
   }
 }
