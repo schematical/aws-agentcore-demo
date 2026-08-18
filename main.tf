@@ -103,12 +103,12 @@ module "buildpipeline" {
   env = var.env
   github_owner = var.github_owner
   github_project_name = var.github_project_name
-  github_source_branch = var.env
+  github_source_branch = "main"#var.env
   code_pipeline_artifact_store_bucket = aws_s3_bucket.codepipeline_artifact_store_bucket.bucket
   vpc_id = var.vpc_id
   private_subnet_mappings = var.private_subnet_mappings # see github.com/schematical/sc-terraform/modules/vpc for this
   source_buildspec_path = "buildspec.yml"
   env_vars =  {
-    NODE_ENV: var.env
+    IMAGE_TAG: var.env
   }
 }

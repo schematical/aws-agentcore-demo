@@ -3,7 +3,12 @@ version: 0.2
 phases:
   pre_build:
     commands:
-
+      - extra_env_vars_json="$EXTRA_ENV_VARS"
+      - keys=$(echo "$extra_env_vars_json" | jq -r 'keys[]')
+      - for key in $keys; do
+      - value=$(echo "$extra_env_vars_json" | jq -r ".$key")
+      - export "$key"="$value"
+      - done
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
