@@ -10,17 +10,21 @@ resource "aws_cloudwatch_log_group" "agent_runtime_logs" {
 
   depends_on = [aws_bedrockagentcore_agent_runtime.agent]
 }
-
-# Delivery Source for Application Logs
-resource "aws_cloudwatch_log_delivery_source" "logs" {
-  name         = "${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}-logs-source"
+resource "aws_cloudwatch_log_delivery_source" "application_logs" {
+  name         = "${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}-application-logs-source"
   log_type     = "APPLICATION_LOGS"
   resource_arn = aws_bedrockagentcore_agent_runtime.agent.agent_runtime_arn
 
   depends_on = [aws_bedrockagentcore_agent_runtime.agent]
 }
 
-# Delivery Destination for Logs (CloudWatch Logs)
+/*resource "aws_cloudwatch_log_delivery_source" "usage_logs" {
+  name         = "${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}-usage-logs-source"
+  log_type     = "USAGE_LOGS"
+  resource_arn = aws_bedrockagentcore_agent_runtime.agent.agent_runtime_arn
+
+  depends_on = [aws_bedrockagentcore_agent_runtime.agent]
+}*/
 resource "aws_cloudwatch_log_delivery_destination" "logs" {
   name = "${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}-logs-destination"
 
@@ -37,9 +41,8 @@ resource "aws_cloudwatch_log_delivery_destination" "logs" {
   depends_on = [aws_cloudwatch_log_group.agent_runtime_logs]
 }
 
-# Delivery Connection for Logs
-resource "aws_cloudwatch_log_delivery" "logs" {
-  delivery_source_name     = aws_cloudwatch_log_delivery_source.logs.name
+resource "aws_cloudwatch_log_delivery" "application_logs" {
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.application_logs.name
   delivery_destination_arn = aws_cloudwatch_log_delivery_destination.logs.arn
 
   tags = {
@@ -49,7 +52,22 @@ resource "aws_cloudwatch_log_delivery" "logs" {
   }
 
   depends_on = [
-    aws_cloudwatch_log_delivery_source.logs,
+    aws_cloudwatch_log_delivery_source.application_logs,
     aws_cloudwatch_log_delivery_destination.logs
   ]
 }
+/*resource "aws_cloudwatch_log_delivery" "usage_logs" {
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.usage_logs.name
+  delivery_destination_arn = aws_cloudwatch_log_delivery_destination.logs.arn
+
+  tags = {
+    Name    = "${var.project_name}-logs-delivery"
+    Purpose = "Connect logs source to CloudWatch destination"
+    Module  = "Observability"
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_delivery_source.usage_logs,
+    aws_cloudwatch_log_delivery_destination.logs
+  ]
+}*/

@@ -126,7 +126,16 @@ resource "aws_iam_role_policy" "agent_execution" {
           "arn:aws:bedrock-agentcore:${data.aws_region.current.id}:${data.aws_caller_identity.current.id}:workload-identity-directory/default",
           "arn:aws:bedrock-agentcore:${data.aws_region.current.id}:${data.aws_caller_identity.current.id}:workload-identity-directory/default/workload-identity/*"
         ]
-      }
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "aws-marketplace:ViewSubscriptions",
+          "aws-marketplace:Subscribe",
+          "aws-marketplace:Unsubscribe",
+        ],
+        "Resource": "*",
+      },
     ]
   })
 }
