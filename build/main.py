@@ -28,7 +28,9 @@ def create_agent() -> Agent:
     system_prompt = """You are a helpful assistant. Answer questions clearly and concisely."""
 
     return Agent(
-        tools=[],
+        tools=[
+            get_latest_schematical_posts
+        ],
         system_prompt=system_prompt,
         name="BasicAgent"
     )
@@ -83,7 +85,7 @@ async def initialize_browser_session():
         raise
 # Tools for Strands Agent
 @tool
-async def get_latest_schematical_posts(city: str) -> Dict[str, Any]:
+async def get_latest_schematical_posts(keyword: str) -> Dict[str, Any]:
 
     browser_session = None
 
