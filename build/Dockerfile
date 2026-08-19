@@ -6,9 +6,10 @@ COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir aws-opentelemetry-distro==0.10.1
 
+RUN apt install curl
 # Create non-root user
-RUN useradd -m -u 1000 bedrock_agentcore
-USER bedrock_agentcore
+# RUN useradd -m -u 1000 bedrock_agentcore
+# USER bedrock_agentcore
 
 EXPOSE 8080
 EXPOSE 8000

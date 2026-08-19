@@ -13,18 +13,16 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
     network_mode = "PUBLIC"
   }
 
- /* environment_variables = merge(
+  environment_variables = merge(
     {
-      AWS_REGION         = var.aws_region
-      AWS_DEFAULT_REGION = var.aws_region
+      BROWSER_ID          = aws_bedrockagentcore_browser.browser.id,
+      MEMORY_ID           = aws_bedrockagentcore_memory.agentcore_memory.id
     },
-    var.environment_variables
-  )*/
+    // var.environment_variables
+  )
 
   depends_on = [
-    # null_resource.trigger_build,
-    aws_iam_role_policy.agent_execution,
-    aws_iam_role_policy_attachment.agent_execution_managed
+    time_sleep.wait_for_codebuild
   ]
 }
 
@@ -111,4 +109,14 @@ module "buildpipeline" {
   env_vars =  {
     IMAGE_TAG: var.env
   }
+  code_build_image_uri = "aws/codebuild/amazonlinux2-aarch64-standard:3.0"
+  codebuild_environment_type = "ARM_CONTAINER"
+}
+
+resource "time_sleep" "wait_for_codebuild" {
+  depends_on = [
+    module.buildpipeline
+  ]
+
+  create_duration = "120s"
 }
