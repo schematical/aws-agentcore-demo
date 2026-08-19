@@ -8,8 +8,8 @@ import traceback
 from contextlib import suppress
 
 from bedrock_agentcore.tools.browser_client import BrowserClient
-from browser_use import Agent as BrowserAgent
-from browser_use.browser.session import BrowserSession
+from browser_use import Agent as BrowserAgentI
+from browser_use.browser.session import BrowseIrSession
 from browser_use.browser import BrowserProfile
 from langchain_aws import ChatBedrockConverse
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
@@ -78,6 +78,15 @@ async def initialize_browser_session():
             model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0", # us.amazon.nova-2-lite-v1:0
             region_name=AWS_REGION,
         )
+
+        console.print("[cyan]🧪 Testing direct Bedrock invoke (bypassing browser_use)...[/cyan]")
+        try:
+            test_response = await bedrock_chat.ainvoke("Reply with the word OK.")
+            console.print(f"[green]✅ Direct Bedrock invoke succeeded: {test_response.content}[/green]")
+        except Exception as bedrock_err:
+            console.print(f"[red]❌ Direct Bedrock invoke failed: {type(bedrock_err).__name__}: {bedrock_err}[/red]")
+            traceback.print_exc()
+            raise
 
         console.print("[green]✅ Browser session initialized and ready[/green]")
         return browser_session, bedrock_chat, client

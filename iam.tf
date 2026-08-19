@@ -139,9 +139,9 @@ resource "aws_iam_role_policy" "agent_execution" {
     ]
   })
 }
-resource "aws_iam_role_policy" "codebuild" {
+
+resource "aws_iam_policy" "codebuild" {
   name = "CodeBuildAgentCorePolicy"
-  role = module.buildpipeline.code_build_iam_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -158,4 +158,9 @@ resource "aws_iam_role_policy" "codebuild" {
 
     ]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild" {
+  role       = module.buildpipeline.code_build_iam_role.id
+  policy_arn = aws_iam_policy.codebuild.arn
 }
