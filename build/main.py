@@ -52,6 +52,7 @@ async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
 
     except Exception as e:
         console.print(f"[red]❌ run_browser_task - Browser task error: {e}[/red]")
+        traceback.print_exc()
         raise
 async def initialize_browser_session():
     """Initialize Browser-use session with AgentCore WebSocket connection"""
