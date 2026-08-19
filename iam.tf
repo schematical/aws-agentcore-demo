@@ -153,7 +153,7 @@ resource "aws_iam_role_policy" "codebuild" {
         Action = [
           "bedrock-agentcore:UpdateAgentRuntime"
         ]
-        Resource = "arn:aws:bedrock-agentcore:${var.region}:${data.aws_caller_identity.current.account_id}:runtime/${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_name}"
+        Resource = "arn:aws:bedrock-agentcore:${var.region}:${data.aws_caller_identity.current.account_id}:runtime/${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}" #"-${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id}"
       }
 
     ]

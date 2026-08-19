@@ -26,11 +26,21 @@ phases:
       - echo Writing image definitions file...
       - printf '[{"name":"%s","imageUri":"%s"}]' $ECS_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
+      - docker push $IMAGE_URI
       - |
-          aws bedrock-agentcore-control update-agent-runtime \
-            --agent-runtime-id "$AGENT_RUNTIME_ID" \
-            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$REPOSITORY_URI:$IMAGE_TAG\"}}" \
-            --role-arn "$AGENT_EXECUTION_ROLE_ARN" \
-            --network-configuration "{\"networkMode\":\"PUBLIC\"}"
+        CURRENT=$(aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id "$AGENT_RUNTIME_ID")
+      - |
+        ENV_VARS=$(echo "$CURRENT" | jq -c '.environmentVariables // {}')
+      - |
+        ROLE_ARN=$(echo "$CURRENT" | jq -r '.roleArn')
+      - |
+        NETWORK_CONFIG=$(echo "$CURRENT" | jq -c '.networkConfiguration')
+      - |
+        aws bedrock-agentcore-control update-agent-runtime \
+        --agent-runtime-id "$AGENT_RUNTIME_ID" \
+        --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
+        --role-arn "$ROLE_ARN" \
+        --network-configuration "$NETWORK_CONFIG" \
+        --environment-variables "$ENV_VARS"
 artifacts:
   files: imagedefinitions.json
