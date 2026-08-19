@@ -129,6 +129,7 @@ async def get_latest_schematical_posts(city: str) -> Dict[str, Any]:
 async def invoke(payload=None):
     """Main entrypoint for the agent"""
     try:
+        console.print(f"[blue]🤖 invoke task:[/blue] {payload.get('prompt', 'Hello, how are you?')[:100]}...")
         # Get the query from payload
         query = payload.get("prompt", "Hello, how are you?") if payload else "Hello, how are you?"
 
@@ -139,7 +140,7 @@ async def invoke(payload=None):
         return {"status": "success", "response": response.message["content"][0]["text"]}
 
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        return {"status": "error", "error": str(e), "stack": e.__traceback__}
 
 
 if __name__ == "__main__":
