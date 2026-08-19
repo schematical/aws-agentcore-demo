@@ -139,3 +139,23 @@ resource "aws_iam_role_policy" "agent_execution" {
     ]
   })
 }
+resource "aws_iam_role_policy" "codebuild" {
+  name = "CodeBuildAgentCorePolicy"
+  role = module.buildpipeline.code_build_iam_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # CloudWatch Logs
+      {
+        Sid    = "AgentCore"
+        Effect = "Allow"
+        Action = [
+          "bedrock-agentcore:UpdateAgentRuntime"
+        ]
+        Resource = "arn:aws:bedrock-agentcore:${var.region}:${data.aws_caller_identity.current.account_id}:runtime/${aws_bedrockagentcore_agent_runtime.agent.agent_runtime_name}"
+      }
+
+    ]
+  })
+}
