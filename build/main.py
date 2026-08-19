@@ -71,7 +71,7 @@ async def initialize_browser_session():
         await browser_session.start()
 
         bedrock_chat = ChatBedrockConverse(
-            model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+            model_id="amazon.nova-2-lite-v1:0",#"us.anthropic.claude-3-7-sonnet-20250219-v1:0",
             region_name=AWS_REGION,
         )
 

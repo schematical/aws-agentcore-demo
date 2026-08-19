@@ -15,7 +15,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
 
   environment_variables = merge(
     {
-      BROWSER_ID          = aws_bedrockagentcore_browser.browser.id,
+      BROWSER_ID          = aws_bedrockagentcore_browser.browser.browser_id,
       MEMORY_ID           = aws_bedrockagentcore_memory.agentcore_memory.id
     },
     // var.environment_variables
