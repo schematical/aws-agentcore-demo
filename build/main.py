@@ -4,6 +4,7 @@ from typing import Dict, Any
 import json
 import os
 import asyncio
+import traceback
 from contextlib import suppress
 
 from bedrock_agentcore.tools.browser_client import BrowserClient
@@ -83,7 +84,6 @@ async def initialize_browser_session():
 
     except Exception as e:
         console.print(f"[red]❌ initialize_browser_session - Browser task error: {type(e).__name__}: {e}[/red]")
-        import traceback
         traceback.print_exc()
         raise
 # Tools for Strands Agent
