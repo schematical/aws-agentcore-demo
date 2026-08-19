@@ -73,7 +73,7 @@ async def initialize_browser_session():
         await browser_session.start()
 
         bedrock_chat = ChatBedrockConverse(
-            model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+            model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0", # us.amazon.nova-2-lite-v1:0
             region_name=AWS_REGION,
         )
 
@@ -81,7 +81,9 @@ async def initialize_browser_session():
         return browser_session, bedrock_chat, client
 
     except Exception as e:
-        console.print(f"[red]❌ initialize_browser_session - Browser task error: {e}[/red]")
+        console.print(f"[red]❌ initialize_browser_session - Browser task error: {type(e).__name__}: {e}[/red]")
+        import traceback
+        traceback.print_exc()
         raise
 # Tools for Strands Agent
 @tool
@@ -113,10 +115,10 @@ async def get_latest_schematical_posts(keyword: str) -> Dict[str, Any]:
         return {"status": "success", "content": [{"text": result}]}
 
     except Exception as e:
-        console.print(f"[red]❌ Error getting weather data: {e}[/red]")
+        console.print(f"[red]❌ Error getting data: {e}[/red]")
         return {
             "status": "error",
-            "content": [{"text": f"Error getting weather data: {str(e)}"}],
+            "content": [{"text": f"Error getting data: {str(e)}"}],
         }
 
     finally:
