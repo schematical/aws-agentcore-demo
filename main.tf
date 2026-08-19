@@ -22,7 +22,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
   )
 
   depends_on = [
-    time_sleep.wait_for_codebuild
+    // time_sleep.wait_for_codebuild
   ]
 }
 
@@ -107,16 +107,18 @@ module "buildpipeline" {
   private_subnet_mappings = var.private_subnet_mappings # see github.com/schematical/sc-terraform/modules/vpc for this
   source_buildspec_path = "buildspec.yml"
   env_vars =  {
-    IMAGE_TAG: var.env
+    IMAGE_TAG: var.env,
+    AGENT_RUNTIME_ID: aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id,
+    AGENT_EXECUTION_ROLE_ARN: aws_iam_role.agent_execution.arn
   }
   code_build_image_uri = "aws/codebuild/amazonlinux2-aarch64-standard:3.0"
   codebuild_environment_type = "ARM_CONTAINER"
 }
 
-resource "time_sleep" "wait_for_codebuild" {
+/*resource "time_sleep" "wait_for_codebuild" {
   depends_on = [
     module.buildpipeline
   ]
 
   create_duration = "120s"
-}
+}*/
