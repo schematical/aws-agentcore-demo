@@ -9,7 +9,7 @@ from contextlib import suppress
 
 from bedrock_agentcore.tools.browser_client import BrowserClient
 from browser_use import Agent as BrowserAgent
-from browser_use.browser.session import BrowseSession
+from browser_use.browser.session import BrowserSession
 from browser_use.browser import BrowserProfile
 from langchain_aws import ChatBedrockConverse
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
