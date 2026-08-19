@@ -46,8 +46,9 @@ async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
         result = await agent.run()
         console.print("[green]✅ Browser task completed successfully![/green]")
 
-        if "done" in result.last_action() and "text" in result.last_action()["done"]:
-            return result.last_action()["done"]["text"]
+        final_text = result.final_result()
+        if final_text:
+            return final_text
         else:
             raise ValueError("NO Data")
 
@@ -67,6 +68,7 @@ async def initialize_browser_session():
         browser_profile = BrowserProfile(
             headers=headers,
             timeout=150000,
+            default_timeout=60000,
         )
 
         browser_session = BrowserSession(cdp_url=ws_url, browser_profile=browser_profile, keep_alive=True)
