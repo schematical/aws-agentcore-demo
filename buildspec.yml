@@ -26,7 +26,7 @@ phases:
       - echo Writing image definitions file...
       - printf '[{"name":"%s","imageUri":"%s"}]' $ECS_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
-      - docker push $IMAGE_URI
+      - export $IMAGE_URI=$REPOSITORY_URI:$IMAGE_TAG
       - |
         CURRENT=$(aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id "$AGENT_RUNTIME_ID")
       - |
