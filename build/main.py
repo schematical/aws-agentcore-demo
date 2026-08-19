@@ -51,7 +51,7 @@ async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
             raise ValueError("NO Data")
 
     except Exception as e:
-        console.print(f"[red]❌ Browser task error: {e}[/red]")
+        console.print(f"[red]❌ run_browser_task - Browser task error: {e}[/red]")
         raise
 async def initialize_browser_session():
     """Initialize Browser-use session with AgentCore WebSocket connection"""
@@ -73,7 +73,7 @@ async def initialize_browser_session():
         await browser_session.start()
 
         bedrock_chat = ChatBedrockConverse(
-            model_id="amazon.nova-2-lite-v1:0",#"us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+            model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
             region_name=AWS_REGION,
         )
 
@@ -81,7 +81,7 @@ async def initialize_browser_session():
         return browser_session, bedrock_chat, client
 
     except Exception as e:
-        console.print(f"[red]❌ Failed to initialize browser session: {e}[/red]")
+        console.print(f"[red]❌ initialize_browser_session - Browser task error: {e}[/red]")
         raise
 # Tools for Strands Agent
 @tool
