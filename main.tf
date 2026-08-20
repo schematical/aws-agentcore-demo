@@ -17,6 +17,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
     {
       BROWSER_ID          = aws_bedrockagentcore_browser.browser.browser_id,
       MEMORY_ID           = aws_bedrockagentcore_memory.agentcore_memory.id
+      MEMORY_STRATEGY_ID  = aws_bedrockagentcore_memory_strategy.semantic.memory_strategy_id
       AWS_REGION          = var.region
     },
     // var.environment_variables
