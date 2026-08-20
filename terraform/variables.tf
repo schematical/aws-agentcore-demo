@@ -29,3 +29,11 @@ variable "codepipeline_bucket" {
   default = "agent-demo-codepipeline"
   type = string
 }
+variable "embedding_model_id" {
+  type    = string
+  default = "amazon.titan-embed-text-v2:0"
+}
+variable "embedding_dimensions" {
+  type    = number
+  default = 1024
+}

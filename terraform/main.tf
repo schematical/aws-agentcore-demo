@@ -15,10 +15,14 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
 
   environment_variables = merge(
     {
-      BROWSER_ID          = aws_bedrockagentcore_browser.browser.browser_id,
-      MEMORY_ID           = aws_bedrockagentcore_memory.agentcore_memory.id
-      MEMORY_STRATEGY_ID  = aws_bedrockagentcore_memory_strategy.semantic.memory_strategy_id
-      AWS_REGION          = var.region
+      BROWSER_ID               = aws_bedrockagentcore_browser.browser.browser_id,
+      MEMORY_ID                = aws_bedrockagentcore_memory.agentcore_memory.id
+      MEMORY_STRATEGY_ID       = aws_bedrockagentcore_memory_strategy.semantic.memory_strategy_id
+      KNOWLEDGE_BASE_TABLE_NAME = aws_dynamodb_table.knowledge_base.name
+      KNOWLEDGE_BASE_INDEX_NAME = local.vector_index_name
+      EMBEDDING_MODEL_ID        = var.embedding_model_id
+      EMBEDDING_DIMENSIONS      = tostring(var.embedding_dimensions)
+      AWS_REGION                = var.region
     },
     // var.environment_variables
   )
@@ -103,7 +107,7 @@ module "buildpipeline" {
   env = var.env
   github_owner = var.github_owner
   github_project_name = var.github_project_name
-  github_source_branch = "main"#var.env
+  github_source_branch = "feat/vector-db"#"main"#var.env
   code_pipeline_artifact_store_bucket = aws_s3_bucket.codepipeline_artifact_store_bucket.bucket
   vpc_id = var.vpc_id
   private_subnet_mappings = var.private_subnet_mappings # see github.com/schematical/sc-terraform/modules/vpc for this

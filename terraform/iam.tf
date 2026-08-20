@@ -23,7 +23,7 @@ resource "aws_iam_role" "agent_execution" {
           "aws:SourceAccount" = data.aws_caller_identity.current.id
         }
         ArnLike = {
-          "aws:SourceArn" = "arn:aws:bedrock-agentcore:${data.aws_region.current.id}:${data.aws_caller_identity.current.id}:*"
+          "aws:SourceArn" = "arn:aws:bedrock-agentcore:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:*"
         }
       }
     }]
@@ -77,7 +77,7 @@ resource "aws_iam_role_policy" "agent_execution" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.id}:log-group:/aws/bedrock-agentcore/runtimes/*"
+        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:log-group:/aws/bedrock-agentcore/runtimes/*"
       },
       # X-Ray Tracing
       {
@@ -123,8 +123,8 @@ resource "aws_iam_role_policy" "agent_execution" {
           "bedrock-agentcore:GetWorkloadAccessTokenForUserId"
         ]
         Resource = [
-          "arn:aws:bedrock-agentcore:${data.aws_region.current.id}:${data.aws_caller_identity.current.id}:workload-identity-directory/default",
-          "arn:aws:bedrock-agentcore:${data.aws_region.current.id}:${data.aws_caller_identity.current.id}:workload-identity-directory/default/workload-identity/*"
+          "arn:aws:bedrock-agentcore:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:workload-identity-directory/default",
+          "arn:aws:bedrock-agentcore:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:workload-identity-directory/default/workload-identity/*"
         ]
       },
       {
@@ -135,6 +135,13 @@ resource "aws_iam_role_policy" "agent_execution" {
           "aws-marketplace:Unsubscribe",
         ],
         "Resource": "*",
+      },
+      # Knowledge Base Vector Search
+      {
+        Sid      = "KnowledgeBaseVectorSearch"
+        Effect   = "Allow"
+        Action   = ["dynamodb:SearchVectors"]
+        Resource = "${aws_dynamodb_table.knowledge_base.arn}/index/${local.vector_index_name}"
       },
     ]
   })

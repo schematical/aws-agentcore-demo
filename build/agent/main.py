@@ -3,6 +3,7 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
 from rich.console import Console
 
 from tools.browser import get_latest_schematical_posts
+from tools.knowledge_base import search_knowledge_base
 from tools.memory import build_memory_tools, log_conversation_turn, DEFAULT_ACTOR_ID, DEFAULT_SESSION_ID
 
 app = BedrockAgentCoreApp()
@@ -18,6 +19,7 @@ def create_agent(actor_id: str, session_id: str) -> Agent:
     return Agent(
         tools=[
             get_latest_schematical_posts,
+            search_knowledge_base,
             *build_memory_tools(actor_id, session_id),
         ],
         system_prompt=system_prompt,

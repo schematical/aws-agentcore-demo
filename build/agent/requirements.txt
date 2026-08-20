@@ -2,6 +2,7 @@ strands-agents
 strands-agents-tools
 uv
 boto3
+botocore>=1.43.64
 bedrock-agentcore
 bedrock-agentcore-starter-toolkit
 browser-use==0.3.2
