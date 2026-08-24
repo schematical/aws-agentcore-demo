@@ -41,10 +41,11 @@ resource "null_resource" "knowledge_base_vector_index" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
       set -euo pipefail
 
-      aws dynamodb update-table \
+      /home/user1a/.local/bin/aws dynamodb update-table \
         --table-name "${aws_dynamodb_table.knowledge_base.name}" \
         --region "${var.region}" \
         --vector-index-updates '[

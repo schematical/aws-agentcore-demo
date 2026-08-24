@@ -85,8 +85,8 @@ def parse_items(feed_bytes: bytes):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--feed-url", default=FEED_URL)
-    parser.add_argument("--table-name", default=os.getenv("KNOWLEDGE_BASE_TABLE_NAME"))
-    parser.add_argument("--region", default=os.getenv("AWS_REGION"))
+    parser.add_argument("--table-name", default=os.getenv("KNOWLEDGE_BASE_TABLE_NAME", "schematical_agent_demo-knowledge-base"))
+    parser.add_argument("--region", default=os.getenv("AWS_REGION", "us-east-1"))
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true", help="Parse and print without writing to DynamoDB")
     args = parser.parse_args()
