@@ -57,7 +57,7 @@ resource "aws_lambda_function" "vectorize" {
   function_name = "${var.project_name}-vectorize-knowledge-base"
   role          = aws_iam_role.vectorize_lambda.arn
   handler       = "handler.handler"
-  runtime       = "python3.12"
+  runtime       = "nodejs20.x"
   timeout       = 30
 
   filename         = data.archive_file.vectorize_lambda.output_path

@@ -1,0 +1,12 @@
+{
+  "name": "dynamo-vector-scripts",
+  "private": true,
+  "version": "1.0.0",
+  "description": "One-time utility scripts for the DynamoDB knowledge base vector search infra.",
+  "scripts": {
+    "seed": "node seed_knowledge_base_from_rss.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0"
+  }
+}

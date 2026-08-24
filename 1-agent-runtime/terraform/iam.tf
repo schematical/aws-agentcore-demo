@@ -141,7 +141,7 @@ resource "aws_iam_role_policy" "agent_execution" {
         Sid      = "KnowledgeBaseVectorSearch"
         Effect   = "Allow"
         Action   = ["dynamodb:SearchVectors"]
-        Resource = "${aws_dynamodb_table.knowledge_base.arn}/index/${local.vector_index_name}"
+        Resource = "${data.aws_dynamodb_table.knowledge_base.arn}/index/${local.vector_index_name}"
       },
     ]
   })

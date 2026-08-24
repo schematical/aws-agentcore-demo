@@ -18,7 +18,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
       BROWSER_ID               = aws_bedrockagentcore_browser.browser.browser_id,
       MEMORY_ID                = aws_bedrockagentcore_memory.agentcore_memory.id
       MEMORY_STRATEGY_ID       = aws_bedrockagentcore_memory_strategy.semantic.memory_strategy_id
-      KNOWLEDGE_BASE_TABLE_NAME = aws_dynamodb_table.knowledge_base.name
+      KNOWLEDGE_BASE_TABLE_NAME = data.aws_dynamodb_table.knowledge_base.name
       KNOWLEDGE_BASE_INDEX_NAME = local.vector_index_name
       EMBEDDING_MODEL_ID        = var.embedding_model_id
       EMBEDDING_DIMENSIONS      = tostring(var.embedding_dimensions)

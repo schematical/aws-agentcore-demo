@@ -41,23 +41,6 @@ resource "aws_iam_role_policy" "agent_execution" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # ECR Access
-      {
-        Sid    = "ECRImageAccess"
-        Effect = "Allow"
-        Action = [
-          "ecr:BatchGetImage",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchCheckLayerAvailability"
-        ]
-        Resource = aws_ecr_repository.agent_ecr.arn
-      },
-      {
-        Sid      = "ECRTokenAccess"
-        Effect   = "Allow"
-        Action   = ["ecr:GetAuthorizationToken"]
-        Resource = "*"
-      },
       # CloudWatch Logs
       {
         Sid    = "CloudWatchLogs"
@@ -133,7 +116,7 @@ resource "aws_iam_role_policy" "agent_execution" {
         Sid      = "KnowledgeBaseVectorSearch"
         Effect   = "Allow"
         Action   = ["dynamodb:SearchVectors"]
-        Resource = "${aws_dynamodb_table.knowledge_base.arn}/index/${local.vector_index_name}"
+        Resource = "${data.aws_dynamodb_table.knowledge_base.arn}/index/${local.vector_index_name}"
       },
     ]
   })

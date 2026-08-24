@@ -43,6 +43,10 @@ resource "aws_bedrockagentcore_harness" "example" {
       }
     }
   }
+  tool {
+    type = "remote_mcp"
+    name = ""
+  }
 
   truncation {
     strategy = "sliding_window"
