@@ -1,3 +1,7 @@
+# Execution role for the harness resource in this folder's main.tf (Stage 4).
+# Separate file from iam.tf's Gateway role, but same root - data.aws_caller_
+# identity.current / data.aws_region.current are already declared in iam.tf.
+
 resource "aws_iam_role" "agent_execution" {
   name = "${var.project_name}-execution-role"
 
@@ -27,13 +31,11 @@ resource "aws_iam_role" "agent_execution" {
   }
 }
 
-# Attach AWS managed policy for AgentCore
 resource "aws_iam_role_policy_attachment" "agent_execution_managed" {
   role       = aws_iam_role.agent_execution.name
   policy_arn = "arn:aws:iam::aws:policy/BedrockAgentCoreFullAccess"
 }
 
-# Inline policy for agent execution
 resource "aws_iam_role_policy" "agent_execution" {
   name = "AgentCoreExecutionPolicy"
   role = aws_iam_role.agent_execution.id
@@ -41,7 +43,6 @@ resource "aws_iam_role_policy" "agent_execution" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # CloudWatch Logs
       {
         Sid    = "CloudWatchLogs"
         Effect = "Allow"
@@ -54,7 +55,6 @@ resource "aws_iam_role_policy" "agent_execution" {
         ]
         Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:log-group:/aws/bedrock-agentcore/runtimes/*"
       },
-      # X-Ray Tracing
       {
         Sid    = "XRayTracing"
         Effect = "Allow"
@@ -66,7 +66,6 @@ resource "aws_iam_role_policy" "agent_execution" {
         ]
         Resource = "*"
       },
-      # CloudWatch Metrics
       {
         Sid      = "CloudWatchMetrics"
         Effect   = "Allow"
@@ -78,7 +77,6 @@ resource "aws_iam_role_policy" "agent_execution" {
           }
         }
       },
-      # Bedrock Model Invocation
       {
         Sid    = "BedrockModelInvocation"
         Effect = "Allow"
@@ -88,7 +86,6 @@ resource "aws_iam_role_policy" "agent_execution" {
         ]
         Resource = "*"
       },
-      # Workload Access Tokens
       {
         Sid    = "GetAgentAccessToken"
         Effect = "Allow"
@@ -110,13 +107,6 @@ resource "aws_iam_role_policy" "agent_execution" {
           "aws-marketplace:Unsubscribe",
         ],
         "Resource": "*",
-      },
-      # Knowledge Base Vector Search
-      {
-        Sid      = "KnowledgeBaseVectorSearch"
-        Effect   = "Allow"
-        Action   = ["dynamodb:SearchVectors"]
-        Resource = "${data.aws_dynamodb_table.knowledge_base.arn}/index/${local.vector_index_name}"
       },
     ]
   })

@@ -4,58 +4,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A demo of AWS Bedrock AgentCore: Terraform provisions an AgentCore Runtime (containerized agent), Browser tool, Memory resource, and a DynamoDB vector-search knowledge base; a CodePipeline/CodeBuild pipeline (defined in an external module) builds and deploys the agent container from `build/agent/`. The agent itself is a Python `strands-agents` Agent that uses `browser_use` + AgentCore's managed Browser tool to drive a headless browser via Bedrock-hosted Claude, exposed through `bedrock_agentcore.runtime.BedrockAgentCoreApp`.
-
-Per README.md, this is a work-in-progress demo touching: Memory, Evaluations, Observability, Browser, MCP connection (most still unchecked/TODO).
+A staged, on-camera build-up of an AWS Bedrock AgentCore Harness — from a bare-bones agent to one with memory, tools, and an MCP Gateway backing a real DynamoDB vector-search knowledge base. See `README.md` for the full stage-by-stage design doc; it's the source of truth for the architecture and demo narrative, not just a description of it.
 
 ## Repo layout
 
-- `terraform/` — the Terraform root module (all `*.tf` files, `terraform.tfvars`, state, and the provider lock file live here — no submodules within this repo):
-  - `main.tf` — ECR repo (+ policy/lifecycle), S3 artifact bucket, the `aws_bedrockagentcore_agent_runtime` resource, and the `buildpipeline` module (pulled from `github.com/schematical/sc-terraform//modules/buildpipeline`, an external repo — not vendored here).
-  - `agentcore_browser.tf`, `agentcore_memory.tf` — the AgentCore Browser and Memory resources referenced by the runtime's env vars (`BROWSER_ID`, `MEMORY_ID`).
-  - `dynamodb_knowledge_base.tf` — the knowledge-base DynamoDB table (on-demand billing, streams enabled) plus a `null_resource`/`local-exec` that creates its vector index via `aws dynamodb update-table --vector-index-updates` (the `hashicorp/aws` provider has no native vector-index support yet) and polls until `ACTIVE`.
-  - `lambda_vectorize.tf` — the Lambda (source zipped from `../build/dynamo-lambda/`) that consumes the knowledge-base table's DynamoDB Stream and writes back Titan embeddings.
-  - `iam.tf` — the agent execution role (assumed by `bedrock-agentcore.amazonaws.com`), the vectorize Lambda's role, and an inline policy attached to the CodeBuild role created by the `buildpipeline` module.
-  - `cloudwatch.tf` — log group + CloudWatch Logs delivery pipeline (source → destination → delivery) wiring AgentCore runtime application logs to CloudWatch.
-  - `variables.tf` — inputs; `vpc_id` and `private_subnet_mappings` have no defaults and must be supplied via `terraform.tfvars` (see `terraform.tfvars.example`, currently empty — check `terraform.tfvars`, gitignored, for real values).
-- `build/` — everything built/pushed by the pipeline, or run manually against the deployed infra:
-  - `build/agent/` — the agent container source (this is the Docker build context, and what `buildspec.yml` deploys):
-    - `main.py` — the agent entrypoint (`BedrockAgentCoreApp`), which wires up `tools/` and handles per-request actor/session context.
-    - `tools/` — one file per Strands tool (`browser.py`, `memory.py`, `knowledge_base.py`).
-    - `Dockerfile` — `python:3.11-slim`, ARM64 target, runs as non-root user `bedrock_agentcore`, launched via `opentelemetry-instrument python -m main`.
-    - `requirements.txt` — no pinned versions except `browser-use==0.3.2`, `langchain-aws>=0.1.0`, and `botocore>=1.43.64` (floor for DynamoDB `SearchVectors` support).
-  - `build/dynamo-lambda/` — source for the vectorize Lambda (`handler.py`), zipped by `terraform/lambda_vectorize.tf`. Not part of the agent container.
-- `scripts/seed_knowledge_base_from_rss.py` — one-time, manually-run utility that seeds the knowledge base table from the `schematical.com` RSS feed; not deployed anywhere.
-- `buildspec.yml` — CodeBuild spec (stays at repo root — the pipeline module points at it by path within the checked-out source repo): builds/pushes the Docker image from `build/agent/` to ECR (tagged `$IMAGE_TAG`, i.e. `$env`), then calls `aws bedrock-agentcore-control update-agent-runtime` directly via the CLI to point the runtime at the new image (Terraform does not manage this update — the pipeline does, out-of-band, after each build).
+One folder per demo stage, plus a shared prerequisite and a standalone reference build — each an independent Terraform root (own `terraform/` subdir, own local state):
+
+- `0-util/` — shared prerequisite, applied once, up front (not itself a demo stage — it's slow, since vector index creation polls for `ACTIVE`).
+  - `terraform/dynamodb_knowledge_base.tf` — the knowledge-base DynamoDB table (on-demand billing, streams enabled) plus a `null_resource`/`local-exec` that creates its vector index via `aws dynamodb update-table --vector-index-updates` (the `hashicorp/aws` provider has no native vector-index support yet) and polls until `ACTIVE`.
+  - `terraform/lambda_vectorize.tf` / `terraform/lambda_search.tf` — the two Lambdas (source zipped from `../build/dynamo-lambda/` and `../build/dynamo-lambda-search/`): `vectorize` consumes the table's DynamoDB Stream and writes back Titan embeddings; `search` embeds a query and runs `dynamodb:SearchVectors`. Both have active X-Ray tracing and structured `console.log` lines.
+  - `build/` — the two Lambdas' JS source. `scripts/` — `seed_knowledge_base_from_rss.js`, a one-time manual utility that seeds the table from the `schematical.com` RSS feed.
+- `1-bare-harness/`, `2-memory/`, `3-browser-tool/` — Stages 1-3. Each is a **complete, independently-applicable snapshot** of the harness at that stage (not commented-out blocks in a shared file) — `terraform/main.tf` holds the `aws_bedrockagentcore_harness` resource, `terraform/iam.tf` its execution role. Each stage builds on the previous by literally being a fuller copy of it (Stage 2 = Stage 1 + memory; Stage 3 = Stage 2 + browser tool).
+- `4-mcp-gateway/` — Stage 4. Provisions the Gateway's own AWS resources (`terraform/gateway.tf`: `aws_bedrockagentcore_gateway` + `gateway_target` pointing at `0-util`'s `search` Lambda via a cross-root `data "aws_lambda_function"` in `terraform/lambda_data.tf`) *and* the harness with every tool active (`terraform/main.tf`, `terraform/iam_harness.tf`), reading the Gateway's ARN directly from the same-root resource. Also has the Gateway's CloudWatch log/trace delivery (`terraform/cloudwatch.tf`) and an SSM publish of the Gateway ARN/URL for manual/external use (`terraform/ssm.tf`).
+- `final/` — a one-time, standalone, fully-wired reference build (own Terraform root, self-contained — its own copy of the util stack, Gateway, and harness, not cross-referencing the staged folders above) showing the complete end state with every stage active at once. See `final/README.md`. Built and reviewed once, not mechanically kept in sync with the staged folders afterward.
+- `archive/1-agent-runtime/` — the old, pre-split layout (a single `terraform/` root with `aws_bedrockagentcore_agent_runtime`, a CodePipeline/CodeBuild pipeline, and a containerized Python agent in `build/agent/`). Superseded by the harness-based structure above; kept for history, not part of the active demo.
+
+**Every stage/reference folder's resource names derive from that folder's own `project_name` Terraform variable** (`schematical_demo_stage1` … `stage4`, `schematical_demo_final`; `0-util` keeps the shared `schematical_agent_demo`) — this is deliberate, so multiple stages can be applied simultaneously ahead of a live presentation without IAM role / harness name collisions.
 
 ## Architecture notes
 
-- **Deploy flow is two-stage and asymmetric**: `terraform apply` (from `terraform/`) provisions the runtime, ECR repo, IAM, Browser, Memory, knowledge-base table/Lambda, and the CodePipeline/CodeBuild pipeline itself — but the *container image* the runtime points at is only updated by the pipeline running `buildspec.yml` (triggered by a push to the `main` branch of the GitHub repo configured via `github_owner`/`github_project_name`). Editing `build/agent/` and running `terraform apply` alone does not deploy new agent code.
-- **IAM ordering coupling**: `iam.tf`'s `aws_iam_role_policy.codebuild` reaches into `module.buildpipeline.code_build_iam_role` and `aws_bedrockagentcore_agent_runtime.agent.agent_runtime_id`, so IAM, the runtime, and the pipeline module are mutually order-dependent — expect this if you see plan/apply ordering issues.
-- **Runtime env vars** (`BROWSER_ID`, `MEMORY_ID`, `MEMORY_STRATEGY_ID`, `KNOWLEDGE_BASE_TABLE_NAME`, `KNOWLEDGE_BASE_INDEX_NAME`, `EMBEDDING_MODEL_ID`, `EMBEDDING_DIMENSIONS`, `AWS_REGION` in `main.tf`) are the wiring between Terraform-provisioned AgentCore resources and `build/agent/main.py`/`tools/`, which read them via `os.getenv`. If you add a new AgentCore resource the agent needs, wire it through this `environment_variables` block.
-- **DynamoDB vector search requires on-demand billing**: `aws_dynamodb_table.knowledge_base` must stay `PAY_PER_REQUEST` — provisioned-capacity tables don't support vector indexes.
-- Several resources/blocks are commented out mid-file (`time_sleep.wait_for_codebuild`, `aws_default_vpc`, usage-logs delivery) — these are deliberate not-yet-enabled pieces, not dead code to delete without checking history/intent first.
-- `terraform/terraform.tfstate`/`.tfstate.backup` are present in the working tree but `.gitignore`'d — local/demo state, not a remote backend. Be careful with concurrent applies.
+- **Stages are separate roots, not a single file with commented blocks.** This repo used to do progressive-uncomment-and-reapply within one `0-agent-harness/terraform/main.tf`; it doesn't anymore. Changing behavior in one stage does *not* automatically propagate to later stages' folders — each is a hand-maintained copy that includes the accumulated config of every earlier stage plus its own addition.
+- **Cross-root references use Terraform `data` sources**, not `terraform_remote_state` — e.g. `4-mcp-gateway/terraform/lambda_data.tf`'s `data "aws_lambda_function" "search"` looks up `0-util`'s Lambda by name (via a separate `util_project_name` variable in that folder, kept distinct from its own `project_name` so the lookup targets `0-util`'s naming regardless of the Gateway stage's own naming).
+- **DynamoDB vector search requires on-demand billing**: `aws_dynamodb_table.knowledge_base` (in `0-util` and `final`) must stay `PAY_PER_REQUEST` — provisioned-capacity tables don't support vector indexes.
+- Each Terraform root's `terraform.tfstate`/`.tfstate.backup` are local — no remote backend. Be careful with concurrent applies across folders that share a dependency (only `4-mcp-gateway` depends on `0-util`).
 
 ## Commands
 
 ```bash
-# Terraform (run from terraform/)
-cd terraform
-terraform init
-terraform plan
-terraform apply
+# Terraform (run from any stage folder's terraform/ subdir)
+cd 0-util/terraform      # apply this first
+terraform init && terraform apply
 
-# Agent container build (matches buildspec.yml; must be arm64 to match the CodeBuild pipeline)
-cd build/agent
-docker build --platform linux/arm64 -t <repo>:<tag> .
+cd ../../1-bare-harness/terraform
+terraform init && terraform apply
+# ...then 2-memory, 3-browser-tool, 4-mcp-gateway in order
 
-# One-time knowledge base seed (needs boto3 + AWS creds; run after the table/index exist)
-python3 scripts/seed_knowledge_base_from_rss.py --dry-run
+# final/ is independent of the staged folders - can be applied any time
+cd final/terraform
+terraform init && terraform apply
+
+# One-time knowledge base seed (needs Node + AWS creds; run after 0-util's table/index exist)
+cd 0-util/scripts && npm install
+node seed_knowledge_base_from_rss.js --dry-run
 ```
 
-There are no lint/test scripts configured in this repo (no CI config beyond `buildspec.yml`, no test suite in `build/`).
+There are no lint/test scripts configured in this repo (no CI config, no test suite).
 
 ## Required Terraform vars
 
-`vpc_id` and `private_subnet_mappings` have no defaults and must be set in `terraform/terraform.tfvars` (see the shape used in the existing, gitignored `terraform/terraform.tfvars`; `terraform/terraform.tfvars.example` is currently empty).
+None of the current stage/`final`/`0-util` folders have required (no-default) variables — everything has a sensible default. (The old `archive/1-agent-runtime/terraform/` root does require `vpc_id` and `private_subnet_mappings` via `terraform.tfvars`, but that root is archived and not part of the active demo.)

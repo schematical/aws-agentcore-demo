@@ -42,9 +42,14 @@ exports.handler = async (event) => {
     // Writing the embedding back to the table re-triggers this same
     // stream, so skip items that are already vectorized for this text to
     // avoid an infinite embed -> write -> re-trigger loop.
-    if ("embedding" in image) continue;
+    if ("embedding" in image) {
+      console.log(JSON.stringify({ msg: "vectorize skipped (already embedded)", itemId }));
+      continue;
+    }
 
+    const embedStart = Date.now();
     const embedding = await embed(text);
+    const embedMs = Date.now() - embedStart;
 
     await dynamodb.send(
       new UpdateItemCommand({
@@ -56,6 +61,8 @@ exports.handler = async (event) => {
         },
       })
     );
+
+    console.log(JSON.stringify({ msg: "vectorize completed", itemId, embedMs }));
   }
 
   return { statusCode: 200 };

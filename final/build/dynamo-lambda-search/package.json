@@ -1,0 +1,10 @@
+{
+  "name": "dynamo-lambda-search",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AgentCore Gateway Lambda target: embeds a query and runs DynamoDB SearchVectors against the knowledge base.",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.888.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.888.0"
+  }
+}

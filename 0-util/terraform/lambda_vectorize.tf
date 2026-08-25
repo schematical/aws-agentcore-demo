@@ -30,6 +30,11 @@ resource "aws_iam_role_policy_attachment" "vectorize_lambda_dynamodb_stream" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole"
 }
 
+resource "aws_iam_role_policy_attachment" "vectorize_lambda_xray" {
+  role       = aws_iam_role.vectorize_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
 resource "aws_iam_role_policy" "vectorize_lambda" {
   name = "VectorizeLambdaPolicy"
   role = aws_iam_role.vectorize_lambda.id
@@ -62,6 +67,10 @@ resource "aws_lambda_function" "vectorize" {
 
   filename         = data.archive_file.vectorize_lambda.output_path
   source_code_hash = data.archive_file.vectorize_lambda.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
