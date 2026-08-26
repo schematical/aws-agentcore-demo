@@ -31,3 +31,6 @@ override.tf.json
 
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
+/0-util/scripts/node_modules/
+**/node_modules/
+**/.artifacts/

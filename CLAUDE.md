@@ -16,10 +16,10 @@ One folder per demo stage, plus a shared prerequisite and a standalone reference
   - `build/` — the two Lambdas' JS source. `scripts/` — `seed_knowledge_base_from_rss.js`, a one-time manual utility that seeds the table from the `schematical.com` RSS feed.
 - `1-bare-harness/`, `2-memory/`, `3-browser-tool/` — Stages 1-3. Each is a **complete, independently-applicable snapshot** of the harness at that stage (not commented-out blocks in a shared file) — `terraform/main.tf` holds the `aws_bedrockagentcore_harness` resource, `terraform/iam.tf` its execution role. Each stage builds on the previous by literally being a fuller copy of it (Stage 2 = Stage 1 + memory; Stage 3 = Stage 2 + browser tool).
 - `4-mcp-gateway/` — Stage 4. Provisions the Gateway's own AWS resources (`terraform/gateway.tf`: `aws_bedrockagentcore_gateway` + `gateway_target` pointing at `0-util`'s `search` Lambda via a cross-root `data "aws_lambda_function"` in `terraform/lambda_data.tf`) *and* the harness with every tool active (`terraform/main.tf`, `terraform/iam_harness.tf`), reading the Gateway's ARN directly from the same-root resource. Also has the Gateway's CloudWatch log/trace delivery (`terraform/cloudwatch.tf`) and an SSM publish of the Gateway ARN/URL for manual/external use (`terraform/ssm.tf`).
-- `final/` — a one-time, standalone, fully-wired reference build (own Terraform root, self-contained — its own copy of the util stack, Gateway, and harness, not cross-referencing the staged folders above) showing the complete end state with every stage active at once. See `final/README.md`. Built and reviewed once, not mechanically kept in sync with the staged folders afterward.
+- `final/` — a one-time reference build (own Terraform root) showing the complete end state with every stage active at once: its own Gateway and harness, but sharing `0-util`'s DynamoDB/Lambda stack via a cross-root `data "aws_lambda_function"` lookup (`lambda_data.tf`) rather than duplicating it — same pattern as `4-mcp-gateway`. Requires `0-util` applied first. See `final/README.md`. Built and reviewed once, not mechanically kept in sync with the staged folders afterward.
 - `archive/1-agent-runtime/` — the old, pre-split layout (a single `terraform/` root with `aws_bedrockagentcore_agent_runtime`, a CodePipeline/CodeBuild pipeline, and a containerized Python agent in `build/agent/`). Superseded by the harness-based structure above; kept for history, not part of the active demo.
 
-**Every stage/reference folder's resource names derive from that folder's own `project_name` Terraform variable** (`schematical_demo_stage1` … `stage4`, `schematical_demo_final`; `0-util` keeps the shared `schematical_agent_demo`) — this is deliberate, so multiple stages can be applied simultaneously ahead of a live presentation without IAM role / harness name collisions.
+**Every stage/reference folder's resource names derive from that folder's own `project_name` Terraform variable** (`schematical-demo-stage1` … `stage4`, `schematical-demo-final`; `0-util` keeps the shared `schematical_agent_demo`) — this is deliberate, so multiple stages can be applied simultaneously ahead of a live presentation without IAM role / harness name collisions. Note the staged/`final` folders use hyphens, not underscores: `aws_bedrockagentcore_harness`/`gateway` names are validated against `^([0-9a-zA-Z][-]?){1,100}$`, which rejects underscores — `0-util`'s own `project_name` keeps its underscore since it only feeds DynamoDB/Lambda/IAM names, which have no such restriction, and it's already applied under that name.
 
 ## Architecture notes
 
@@ -39,7 +39,7 @@ cd ../../1-bare-harness/terraform
 terraform init && terraform apply
 # ...then 2-memory, 3-browser-tool, 4-mcp-gateway in order
 
-# final/ is independent of the staged folders - can be applied any time
+# final/ needs 0-util applied first (shares its DynamoDB/Lambda stack)
 cd final/terraform
 terraform init && terraform apply
 

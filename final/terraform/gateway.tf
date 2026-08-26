@@ -1,7 +1,7 @@
-# Unlike the staged 4-mcp-gateway folder (which reads the search Lambda via a
-# cross-root data source, since util lives in a separate root there), this
-# tree is self-contained - the search Lambda is a direct resource reference
-# in the same root (see lambda_search.tf).
+# The search Lambda is owned by 0-util/terraform, looked up via the
+# cross-root data source in lambda_data.tf - same pattern as the staged
+# 4-mcp-gateway folder. final/ no longer keeps its own copy of the
+# DynamoDB/Lambda stack; only 0-util does, applied once and shared.
 
 resource "aws_bedrockagentcore_gateway" "mcp" {
   name            = "${var.project_name}-knowledge-base-mcp"
@@ -29,7 +29,7 @@ resource "aws_bedrockagentcore_gateway_target" "search_knowledge_base" {
   target_configuration {
     mcp {
       lambda {
-        lambda_arn = aws_lambda_function.search.arn
+        lambda_arn = data.aws_lambda_function.search.arn
 
         tool_schema {
           inline_payload {

@@ -10,8 +10,17 @@
 # stage-by-stage walkthrough.
 # ============================================================================
 
+# harnessName must satisfy ^[a-zA-Z][a-zA-Z0-9_]{0,39}$ - letters/digits/
+# underscore only (no hyphens), max 40 chars. This is the opposite charset
+# from the Gateway's name field (hyphens, no underscores), so it can't just
+# reuse var.project_name directly even though every other resource in this
+# folder does.
+locals {
+  harness_name = "${replace(var.project_name, "-", "_")}_harness"
+}
+
 resource "aws_bedrockagentcore_harness" "harness" {
-  harness_name       = "${var.project_name}-harness"
+  harness_name       = local.harness_name
   execution_role_arn = aws_iam_role.agent_execution.arn
 
   model {

@@ -6,11 +6,11 @@ variable "region" {
   type    = string
   default = "us-east-1"
 }
-variable "embedding_model_id" {
+
+# Separate from project_name above: this must match 0-util/terraform's own
+# project_name (not this folder's) since it's used to look up the search
+# Lambda that 0-util created, by name.
+variable "util_project_name" {
   type    = string
-  default = "amazon.titan-embed-text-v2:0"
-}
-variable "embedding_dimensions" {
-  type    = number
-  default = 1024
+  default = "schematical_agent_demo"
 }

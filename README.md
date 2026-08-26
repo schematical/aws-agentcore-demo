@@ -13,13 +13,13 @@ One folder per demo stage, plus a shared prerequisite and a reference build — 
 | `2-memory/terraform/` | Stage 2: harness + managed memory | nothing |
 | `3-browser-tool/terraform/` | Stage 3: harness + memory + the native `agentcore_browser` tool | nothing |
 | `4-mcp-gateway/terraform/` | Stage 4: the `aws_bedrockagentcore_gateway` (MCP server) + `gateway_target` pointing at `0-util`'s `search` Lambda, **plus** the harness with every tool active | `0-util` |
-| `final/terraform/` | A one-time, standalone, fully-wired reference build (own state, self-contained) showing the complete end state — see `final/README.md` | nothing |
+| `final/terraform/` | A one-time reference build (own state) showing the complete end state — every stage's config active at once, plus its own Gateway — see `final/README.md` | `0-util` |
 
-Each stage folder is a **complete, independently-applicable snapshot** of the infra as it looks after that stage — not a shared file with commented-out blocks for later stages. This means every stage can be pre-applied ahead of a live presentation and left standing, so the demo just switches which harness it's showing instead of running `terraform apply`/`destroy` on camera. That only works because every stage's resources (harness, IAM roles, etc.) are named off that folder's own `project_name` variable (`schematical_demo_stage1` … `stage4`) — no two stages share a resource name, so applying several at once doesn't collide.
+Each stage folder is a **complete, independently-applicable snapshot** of the infra as it looks after that stage — not a shared file with commented-out blocks for later stages. This means every stage can be pre-applied ahead of a live presentation and left standing, so the demo just switches which harness it's showing instead of running `terraform apply`/`destroy` on camera. That only works because every stage's resources (harness, IAM roles, etc.) are named off that folder's own `project_name` variable (`schematical-demo-stage1` … `stage4`) — no two stages share a resource name, so applying several at once doesn't collide.
 
-`0-util` is a shared prerequisite, not itself a demo stage — it's slow (vector index creation polls for `ACTIVE`), so it gets applied once, up front, before the on-camera walkthrough starts. Only `4-mcp-gateway` depends on it (via a `data "aws_lambda_function"` cross-root lookup, looking up `0-util`'s Lambda by name).
+`0-util` is a shared prerequisite, not itself a demo stage — it's slow (vector index creation polls for `ACTIVE`), so it gets applied once, up front, before the on-camera walkthrough starts. `4-mcp-gateway` and `final` both depend on it (via a `data "aws_lambda_function"` cross-root lookup, looking up `0-util`'s Lambda by name) rather than keeping their own copy of the DynamoDB/Lambda stack.
 
-**Apply order**: `0-util` (once, up front) → `1-bare-harness` → `2-memory` → `3-browser-tool` → `4-mcp-gateway`. Stages 1-3 need nothing but their own folder; Stage 4 needs `0-util` already applied.
+**Apply order**: `0-util` (once, up front) → `1-bare-harness` → `2-memory` → `3-browser-tool` → `4-mcp-gateway` → `final`. Stages 1-3 need nothing but their own folder; Stage 4 and `final` both need `0-util` already applied.
 
 ## Demo stages
 
@@ -46,12 +46,12 @@ Not yet designed. See Roadmap below.
 ## Observability
 
 - **Both Lambdas** (`vectorize`, `search`, in `0-util/terraform/`) have active X-Ray tracing (`tracing_config { mode = "Active" }`) and structured `console.log` lines (query text, per-call timings, result counts) — visible in their own `/aws/lambda/...` CloudWatch Log groups.
-- **The Gateway** has explicit CloudWatch log + X-Ray trace delivery configured (`4-mcp-gateway/terraform/cloudwatch.tf`, mirrored in `final/terraform/cloudwatch.tf`) — Gateway resources don't get a log destination by default the way the old agent runtime did.
+- **The Gateway** has explicit CloudWatch log delivery configured (`4-mcp-gateway/terraform/cloudwatch.tf`, mirrored in `final/terraform/cloudwatch.tf`) — Gateway resources don't get a log destination by default the way the old agent runtime did. X-Ray trace delivery for the Gateway isn't wired up yet — it requires the account-wide Transaction Search setting below to be enabled first, or `aws_cloudwatch_log_delivery` creation fails with a `ValidationException`.
 - **Not done yet**: account-wide CloudWatch Transaction Search (needed for the full cross-service GenAI Observability dashboard — a distributed-trace view spanning harness → gateway → Lambda), and harness-level tracing (AWS's console has a per-resource "Tracing" toggle for this, but no equivalent field was found on `aws_bedrockagentcore_harness` in the `hashicorp/aws` provider yet). Both are real, account/account-wide-affecting changes that were deliberately left out of this pass rather than guessed at — see Roadmap.
 ## Export:
 
 ```
-agentcore export harness --name schematical_demo_final-harness
+agentcore export harness --name schematical-demo-final-harness
 ```
 
 ## Roadmap / not yet designed
