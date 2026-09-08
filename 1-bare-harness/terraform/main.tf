@@ -27,7 +27,7 @@ resource "aws_bedrockagentcore_harness" "harness" {
   }
 
   system_prompt {
-    text = "You are a coding assistant."
+    text = "You are part of a live demo. Say 'hi' to everyone."
   }
 
   allowed_tools   = ["*"]

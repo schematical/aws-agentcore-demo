@@ -34,3 +34,8 @@ override.tf.json
 /0-util/scripts/node_modules/
 **/node_modules/
 **/.artifacts/
+
+# Skill content fetched at `terraform apply` time (see
+# 5-skills/terraform/skill_fetch.tf) rather than committed - this is a clone
+# destination, not source we own.
+/skills/*/
