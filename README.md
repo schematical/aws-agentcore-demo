@@ -1,6 +1,15 @@
 # Schematical AWS AgentCore Demo
 
+## Requirements:
+1) You will need an [AWS Account](https://signin.aws.amazon.com/signup?request_type=register)
+2) You will need the latest AWS cli tool installed](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+3) You will need [the Terraform CLI installed](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli).
+4) You will want to clone down this repo.
 
+
+### A note on costs:
+Building this, the main thing I got charged for was Bedrock Invocations. 
+This only ran me under $1 but if you got chatty with it or gave it a complicated workload, this will go up.
 
 ## Stage 0 - Shared Assets:
 Directory: [./0-util](./0-util)
@@ -40,8 +49,15 @@ Directory: [./1-bare-harness](./1-bare-harness)
 [./1-bare-harness/terraform/main.tf](./1-bare-harness/terraform/main.tf)
 This sets up a bare-bones agent harness.
 
-- [ ] The Agent should have no memory based on session or otherwise.
+### IAM Role:
+[./2-memory/terraform/iam.tf](./2-memory/terraform/iam.tf)
 
+
+
+### Talking Points:
+- [ ] The Agent should have no memory based on session or otherwise.
+- [ ] Show logging
+- [ ] O'Reilly's Course - [Zero to Hero on AWS Security: An Animated Guide to Security in the Cloud](https://learning.oreilly.com/course/zero-to-hero/0642572107789/)
 
 
 ## Stage 2 - Memory:
@@ -59,8 +75,10 @@ This now should have the addition of the following block which gives it some bas
     }
   }
 ```
-
+### Talking Points:
 - [ ] Demonstrate memory by `actorId`
+- [ ] "Can you remember my name?"
+- [ ] "My name is XZY remember it."
 
 ## Stage 3 - Browser Tool:
 Directory: [./3-browser-tool](./3-browser-tool)
@@ -75,7 +93,7 @@ tool {
 }
 ```
 - [ ] Show AgentCore browser in action: https://us-east-1.console.aws.amazon.com/bedrock-agentcore/browser
-
+- [ ] Run prompt: "Can you browse to http://datacamp.com/blog and get the latest post?"
 
 ## Stage 4 - MCP Gateway:
 In this stage we give access to the DynamoDB knowledgeable via a MCP with AgentCoreGateway and a Lambda
@@ -101,7 +119,19 @@ Runtime lets you bring your own code to the inner workings of an agent harness.
 For most beginners if you want to use AgentCore I suggest sticking with harness unless you want to really be platform-agnostic, in which case probably don't use AgentCore.
 
 
+### Extra Cost Management:
+- [ ] https://us-east-1.console.aws.amazon.com/costmanagement/home?region=us-east-1#/cost-explorer?chartStyle=STACK&costAggregate=netUnblendedCost&endDate=2026-08-31&excludeForecasting=true&filter=%5B%7B%22dimension%22:%7B%22id%22:%22Service%22,%22displayValue%22:%22Service%22%7D,%22operator%22:%22INCLUDES%22,%22values%22:%5B%7B%22value%22:%22Amazon%20Bedrock%22,%22displayValue%22:%22Bedrock%22%7D%5D%7D%5D&futureRelativeRange=CUSTOM&granularity=Daily&groupBy=%5B%22Service%22%5D&historicalRelativeRange=CUSTOM&isDefault=true&reportMode=STANDARD&reportName=New%20cost%20and%20usage%20report&showOnlyUncategorized=false&showOnlyUntagged=false&startDate=2026-08-01&usageAggregate=undefined&useNormalizedUnits=false
+- [ ] https://schematical.com/book
 
+
+
+
+
+
+
+
+
+------
 ## Matt's Notes:
 
 
@@ -118,3 +148,4 @@ cd ../../final/terraform
 terraform init
 terraform apply
 ```
+- [ ] Add slides + Explanations
