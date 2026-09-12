@@ -18,6 +18,28 @@ This sets up shared assets that will be used by several of our configurations. I
 
 Included in it is a Vector Index and DynamoDB cluster.
 
+### Infrastructure:
+```mermaid
+architecture-beta
+    group aws(cloud)["AWS Account"]
+
+    service ddb(database)["aws_dynamodb_table.knowledge_base (vector-index)"] in aws
+    service vecfn(server)["aws_lambda_function.vectorize"] in aws
+    service vecrole(disk)["aws_iam_role.vectorize_lambda"] in aws
+    service searchfn(server)["aws_lambda_function.search"] in aws
+    service searchrole(disk)["aws_iam_role.search_lambda"] in aws
+    service titan(cloud)["Amazon Bedrock Titan Embeddings"] in aws
+    service gwcaller(internet)["Stage 4 Gateway target"]
+
+    ddb:T -- B:vecfn
+    vecfn:L -- R:vecrole
+    vecfn:R -- T:titan
+    searchfn:L -- R:ddb
+    searchfn:B -- T:searchrole
+    searchfn:R -- L:titan
+    gwcaller:B -- T:searchfn
+```
+
 ```
 cd ./0-util/terraform
 terraform plan
@@ -45,6 +67,23 @@ This lambda converts a text search into and embedding which can be used to perfo
 ## Stage 1 - Bare Harness:
 Directory: [./1-bare-harness](./1-bare-harness)
 
+### Infrastructure:
+```mermaid
+architecture-beta
+    group aws(cloud)["AWS Account"]
+
+    service user(internet)["User (InvokeAgentRuntime)"] in aws
+    service harness(server)["aws_bedrockagentcore_harness.harness (no memory, no tools)"] in aws
+    service role(disk)["aws_iam_role.agent_execution"] in aws
+    service bedrock(cloud)["Amazon Bedrock: Claude Sonnet 4"] in aws
+    service logs(disk)["CloudWatch Logs + X-Ray"] in aws
+
+    user:R -- L:harness
+    harness:B -- T:role
+    harness:R -- L:bedrock
+    role:B -- T:logs
+```
+
 ### Main Harness:
 [./1-bare-harness/terraform/main.tf](./1-bare-harness/terraform/main.tf)
 This sets up a bare-bones agent harness.
@@ -63,6 +102,25 @@ This sets up a bare-bones agent harness.
 ## Stage 2 - Memory:
 Directory: [./2-memory/](./2-memory/)
 This gives your agent basic memory.
+
+### Infrastructure:
+```mermaid
+architecture-beta
+    group aws(cloud)["AWS Account"]
+
+    service user(internet)["User (InvokeAgentRuntime, actorId)"] in aws
+    service harness(server)["aws_bedrockagentcore_harness.harness"] in aws
+    service role(disk)["aws_iam_role.agent_execution"] in aws
+    service bedrock(cloud)["Amazon Bedrock: Claude Sonnet 4"] in aws
+    service memory(database)["Managed Memory (SEMANTIC + SUMMARIZATION)"] in aws
+    service logs(disk)["CloudWatch Logs + X-Ray"] in aws
+
+    user:R -- L:harness
+    harness:T -- B:memory
+    harness:B -- T:role
+    harness:R -- L:bedrock
+    role:B -- T:logs
+```
 
 ### Main Harness:
 [./2-memory/terraform/main.tf](./2-memory/terraform/main.tf)
@@ -85,6 +143,29 @@ Directory: [./3-browser-tool](./3-browser-tool)
 
 In this one we give the agent access to open a browser and browse the web.
 
+### Infrastructure:
+```mermaid
+architecture-beta
+    group aws(cloud)["AWS Account"]
+
+    service user(internet)["User (InvokeAgentRuntime)"] in aws
+    service harness(server)["aws_bedrockagentcore_harness.harness"] in aws
+    service role(disk)["aws_iam_role.agent_execution"] in aws
+    service bedrock(cloud)["Amazon Bedrock: Claude Sonnet 4"] in aws
+    service memory(database)["Managed Memory"] in aws
+    service browser(cloud)["AgentCore Browser (AWS-managed)"] in aws
+    service web(internet)["Target website (e.g. datacamp.com)"]
+    service logs(disk)["CloudWatch Logs + X-Ray"] in aws
+
+    user:R -- L:harness
+    harness:T -- B:bedrock
+    harness:T -- B:memory
+    harness:B -- T:role
+    harness:R -- L:browser
+    browser:R -- L:web
+    role:B -- T:logs
+```
+
 The main codeblock to add access to the browser is as follows:
 ```
 tool {
@@ -97,6 +178,40 @@ tool {
 
 ## Stage 4 - MCP Gateway:
 In this stage we give access to the DynamoDB knowledgeable via a MCP with AgentCoreGateway and a Lambda
+
+### Infrastructure:
+```mermaid
+architecture-beta
+    group aws(cloud)["AWS Account"]
+    group util(cloud)["0-util (shared)"] in aws
+
+    service user(internet)["User (InvokeAgentRuntime)"] in aws
+    service harness(server)["aws_bedrockagentcore_harness.harness (browser + gateway tools)"] in aws
+    service harnessrole(disk)["aws_iam_role.agent_execution"] in aws
+    service bedrock(cloud)["Amazon Bedrock: Claude Sonnet 4"] in aws
+    service memory(database)["Managed Memory"] in aws
+    service browser(cloud)["AgentCore Browser"] in aws
+    service logs(disk)["CloudWatch Logs + X-Ray"] in aws
+    service gw(server)["aws_bedrockagentcore_gateway.mcp"] in aws
+    service gwrole(disk)["aws_iam_role.gateway"] in aws
+    service ssm(disk)["SSM Parameters (gateway ARN + URL)"] in aws
+    service gwlogs(disk)["Gateway CloudWatch log delivery"] in aws
+    service search(server)["aws_lambda_function.search"] in util
+    service ddb(database)["aws_dynamodb_table.knowledge_base"] in util
+
+    user:R -- L:harness
+    harness:T -- B:bedrock
+    harness:T -- B:memory
+    harness:B -- T:harnessrole
+    harness:L -- R:browser
+    harness:R -- L:gw
+    harnessrole:B -- T:logs
+    gw:T -- B:ssm
+    gw:B -- T:gwrole
+    gw:R -- L:gwlogs
+    gwrole:B -- T:search
+    search:R -- L:ddb
+```
 
 ### AgentCore Gateway:
 [./4-mcp-gateway/terraform/gateway.tf](./4-mcp-gateway/terraform/gateway.tf)
