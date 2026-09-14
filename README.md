@@ -23,6 +23,7 @@ Included in it is a Vector Index and DynamoDB cluster.
 
 ```
 cd ./0-util/terraform
+terraform init
 terraform plan
 #terraform apply
 
@@ -122,7 +123,72 @@ Then it returns the response to the party making the MCP request.
 
 This stores the MCP Gateway's URL so the agent(or other agents) knows where to point the MCP requests at.
 
+## Stage 5 - Skills:
+Directory: [./5-skills](./5-skills)
 
+In this stage we give the agent an [Agent Skill](https://www.anthropic.com/news/skills) - a packaged folder of instructions (and optionally scripts) that teaches it a specific capability - alongside a sandboxed `agentcore_code_interpreter` tool to actually run those scripts. The skill used here, `terraform-diagram`, is one we wrote ourselves: it reads a directory of `.tf` files, produces a [Mermaid](https://mermaid.js.org/) dependency diagram of its resources, data sources, and modules, renders that diagram to a PNG, and uploads it to S3 - responding with a presigned URL to the image.
+
+### Infrastructure:
+
+The main codeblock to add is:
+```
+tool {
+    type = "agentcore_code_interpreter"
+    name = "code_interpreter"
+
+    config {
+      agentcore_code_interpreter {
+        code_interpreter_arn = aws_bedrockagentcore_code_interpreter.diagram_renderer.code_interpreter_arn
+      }
+    }
+}
+skill {
+    s3 {
+      uri = "s3://${aws_s3_bucket.diagrams.bucket}/skills/terraform-diagram/"
+    }
+}
+```
+[./5-skills/terraform/main.tf](./5-skills/terraform/main.tf)
+
+We've also defined an **evaluator** - a native `aws_bedrockagentcore_evaluator` resource that scores how well the agent executes the terraform-diagram skill (did it actually parse the directory, render a correct diagram, upload it to S3, and return a working link - versus skipping the skill or fabricating a result):
+```
+resource "aws_bedrockagentcore_evaluator" "terraform_diagram_skill" {
+  evaluator_name = "terraform_diagram_skill_eval"
+  level          = "TRACE"
+
+  evaluator_config {
+    llm_as_a_judge {
+      instructions = "..." # see file for the full PASS/PARTIAL/FAIL rubric
+
+      rating_scale {
+        categorical { label = "PASS" ... }
+        categorical { label = "PARTIAL" ... }
+        categorical { label = "FAIL" ... }
+      }
+
+      model_config {
+        bedrock_evaluator_model_config {
+          model_id = "us.amazon.nova-2-lite-v1:0"
+        }
+      }
+    }
+  }
+}
+```
+[./5-skills/terraform/evaluator.tf](./5-skills/terraform/evaluator.tf)
+
+
+
+### Talking Points:
+- [ ] "What skills do you have?" / "Can you diagram the Terraform in 4-mcp-gateway/terraform for me?"
+- [ ] "Draw me a dependency graph of this stage's own Terraform."
+- [ ] Follow the PNG link it responds with - it's a real, presigned S3 URL good for an hour.
+- [ ] Note that the skill content isn't actually reachable by a live harness yet (see Roadmap) - this stage demonstrates the Terraform wiring, not an end-to-end working skill.
+- [ ] The evaluator scores skill executions on demand, but it isn't wired to live traffic yet (see Roadmap) - it demonstrates the scoring rubric, not a running evaluation job.
+
+## Clean Up:
+Be sure to run `terraform destroy` in each of the respective terraform directories once you are done with them to spin down the infrastructure.
+`
 
 ## Extra:
 
@@ -137,9 +203,16 @@ For most beginners if you want to use AgentCore I suggest sticking with harness 
 - [ ] https://schematical.com/book
 
 
+## Have More questions?
+Feel free to connect
+- [Schematical.com](https://schematical.com)
+- [Free Resources](https://schematical.com/free)
+- [LinkedIn](https://www.linkedin.com/in/schematical)
+- [YouTube](https://www.youtube.com/schematical)
+- [Discord](https://discord.gg/zUEacFT)
 
 
-
+https://llmcamp.com/100days/agentmemory
 
 
 
@@ -163,28 +236,4 @@ terraform apply
 ```
 
 
-
-# Slides Outline
-## LLMs:
-
-User Prompt: Mary had a little ...
-
-LLM Response: lamb.
-
-
-## Tool Calls:
-(Show how tool calls work)
-
-
-## Model Context Protocol:
-(Show how tool calls work)
-
-## Vector Indexes:
-(Show a dot plot with 2 axes. X - Torn/not torn. Y - Torn from the top vs bottom. Then draw several MRIs of biceps that look torn or not torn acordingly).
-
-##  Embedding Models:
-Embedding models take in text, images and other types of data and transforms them to vectors [x,y,z] which are used as the index.
-
-## Agents:
-Combine all this technologies and it becomes an "Agent".
 
