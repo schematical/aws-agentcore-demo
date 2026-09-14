@@ -3,9 +3,7 @@ locals {
   vector_index_name         = "${var.project_name}-vector-index"
 }
 
-# On-demand (PAY_PER_REQUEST) billing is required for DynamoDB vector search -
-# provisioned-capacity tables do not support vector indexes.
-# https://aws.amazon.com/blogs/aws/amazon-dynamodb-now-supports-real-time-vector-search-at-any-scale/
+
 resource "aws_dynamodb_table" "knowledge_base" {
   name         = local.knowledge_base_table_name
   billing_mode = "PAY_PER_REQUEST"
@@ -25,12 +23,7 @@ resource "aws_dynamodb_table" "knowledge_base" {
   }
 }
 
-# The hashicorp/aws provider has no vector-index support yet (GA'd 2026-08-05,
-# too new for the provider schema - confirmed no vector_index/Dimensions/
-# DistanceFunction args on aws_dynamodb_table). Same class of gap this repo
-# already works around for the agent runtime image update in buildspec.yml -
-# create the index out-of-band via the AWS CLI and poll until ACTIVE, since
-# there's no waiter for vector index creation.
+
 resource "null_resource" "knowledge_base_vector_index" {
   depends_on = [aws_dynamodb_table.knowledge_base]
 

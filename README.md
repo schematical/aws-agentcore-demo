@@ -65,6 +65,10 @@ This sets up a bare-bones agent harness.
 - [ ] Show logging
 - [ ] O'Reilly's Course - [Zero to Hero on AWS Security: An Animated Guide to Security in the Cloud](https://learning.oreilly.com/course/zero-to-hero/0642572107789/)
 
+## Invoking The Harness:
+We will mainly be using the test UI in the AWS console but in production you would likely [Invoke it via the API](https://docs.aws.amazon.com/bedrock-agentcore/latest/APIReference/API_InvokeHarness.html).
+
+
 
 ## Stage 2 - Memory:
 Directory: [./2-memory/](./2-memory/)
@@ -122,16 +126,41 @@ Then it returns the response to the party making the MCP request.
 [./4-mcp-gateway/terraform/ssm.tf](./4-mcp-gateway/terraform/ssm.tf)
 
 This stores the MCP Gateway's URL so the agent(or other agents) knows where to point the MCP requests at.
-
 ## Stage 5 - Skills:
 Directory: [./5-skills](./5-skills)
+
+In this stage we can add some basic skills that the Agent can pull from. 
+Skills separate out task-specific information from the main system prompts to keep the context window small and focused until the time comes to perform the specific task.
+### Infrastructure:
+
+
+
+```terraform
+ skill {
+    s3 {
+      uri = "s3://${aws_s3_bucket.diagrams.bucket}/skills/poem/"
+    }
+  }
+```
+
+
+### Talking Points:
+- [ ] Prompt "Use your poem skill to write something fun"
+
+
+
+
+## Stage 6 - Code Interpreter:
+Directory: [6-code-interpreter](6-code-interpreter)
+
+WARNING: This is the most experimental stage and the results vary wildly based on the models you use. 
 
 In this stage we give the agent an [Agent Skill](https://www.anthropic.com/news/skills) - a packaged folder of instructions (and optionally scripts) that teaches it a specific capability - alongside a sandboxed `agentcore_code_interpreter` tool to actually run those scripts. The skill used here, `terraform-diagram`, is one we wrote ourselves: it reads a directory of `.tf` files, produces a [Mermaid](https://mermaid.js.org/) dependency diagram of its resources, data sources, and modules, renders that diagram to a PNG, and uploads it to S3 - responding with a presigned URL to the image.
 
 ### Infrastructure:
 
 The main codeblock to add is:
-```
+```terraform
 tool {
     type = "agentcore_code_interpreter"
     name = "code_interpreter"
@@ -150,7 +179,7 @@ skill {
 ```
 [./5-skills/terraform/main.tf](./5-skills/terraform/main.tf)
 
-We've also defined an **evaluator** - a native `aws_bedrockagentcore_evaluator` resource that scores how well the agent executes the terraform-diagram skill (did it actually parse the directory, render a correct diagram, upload it to S3, and return a working link - versus skipping the skill or fabricating a result):
+### Custom Evaluator:
 ```
 resource "aws_bedrockagentcore_evaluator" "terraform_diagram_skill" {
   evaluator_name = "terraform_diagram_skill_eval"
@@ -180,17 +209,22 @@ resource "aws_bedrockagentcore_evaluator" "terraform_diagram_skill" {
 
 
 ### Talking Points:
-- [ ] "What skills do you have?" / "Can you diagram the Terraform in 4-mcp-gateway/terraform for me?"
-- [ ] "Draw me a dependency graph of this stage's own Terraform."
+- [ ] "Draw me a network diagram of this Terraform https://github.com/schematical/sc-terraform/tree/main/modules/lambda-service."
 - [ ] Follow the PNG link it responds with - it's a real, presigned S3 URL good for an hour.
-- [ ] Note that the skill content isn't actually reachable by a live harness yet (see Roadmap) - this stage demonstrates the Terraform wiring, not an end-to-end working skill.
-- [ ] The evaluator scores skill executions on demand, but it isn't wired to live traffic yet (see Roadmap) - it demonstrates the scoring rubric, not a running evaluation job.
 
 ## Clean Up:
 Be sure to run `terraform destroy` in each of the respective terraform directories once you are done with them to spin down the infrastructure.
 `
 
 ## Extra:
+
+### Exporting as a deployable Strands runtime agent:
+```bash 
+npm install @aws/agentcore
+./node_modules/.bin/agentcore create
+cd {your project dir}
+./node_modules/.bin/agentcore export harness --arn arn:aws:bedrock-agentcore:us-east-1:368590945923:harness/schematical_demo_stage5_harness-yPZVhWnFZb
+```
 
 ### AgentCore Runtime vs Harness:
 Runtime lets you bring your own code to the inner workings of an agent harness.

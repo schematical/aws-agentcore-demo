@@ -35,7 +35,9 @@ override.tf.json
 **/node_modules/
 **/.artifacts/
 
-# Skill content fetched at `terraform apply` time (see
-# 5-skills/terraform/skill_fetch.tf) rather than committed - this is a clone
-# destination, not source we own.
-/skills/*/
+# Python venvs/caches created by locally running skill scripts (e.g.
+# 5-skills/skills/terraform-diagram/scripts/setup.sh) - never meant to be
+# committed or uploaded (see that folder's terraform/s3.tf explicit filter).
+**/.venv/
+**/__pycache__/
+*.pyc
