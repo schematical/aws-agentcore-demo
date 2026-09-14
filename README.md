@@ -75,9 +75,6 @@ Directory: [./2-memory/](./2-memory/)
 This gives your agent basic memory.
 
 ### Infrastructure:
-
-
-### Main Harness:
 [./2-memory/terraform/main.tf](./2-memory/terraform/main.tf)
 This now should have the addition of the following block which gives it some basic memory based on sessions.
 ```
